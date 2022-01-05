@@ -6,9 +6,9 @@ public class ScoredGuess
     public char[] KnownLetters = new char[Constants.wordLength];
     // +1 as the % operator used to access means a = 1, b=2 
     // this is fewer operations than correcting by 1 every array index access
-    private byte[] KnownLetterCounts = new byte[Constants.validCharacters.Length + 1];
+    public byte[] KnownLetterCounts = new byte[Constants.validCharacters.Length + 1];
     public char[] MisplacedLetters = new char[Constants.wordLength];
-    private byte[] MisplacedLetterCounts = new byte[Constants.validCharacters.Length + 1];
+    public byte[] MisplacedLetterCounts = new byte[Constants.validCharacters.Length + 1];
     public char[] EliminatedLetters = new char[Constants.wordLength];
 
     private ScoredGuess(Word guess)
@@ -16,19 +16,9 @@ public class ScoredGuess
         Guess = guess;
     }
 
-    public int GetKnownLetterCount(char c)
-    {
-        return KnownLetterCounts[(int)c % 32];
-    }
-
     private void IncreaseKnownLetterCount(char c)
     {
         KnownLetterCounts[(int)c % 32]++;
-    }
-
-    public int GetMisplacedLetterCount(char c)
-    {
-        return MisplacedLetterCounts[(int)c % 32];
     }
 
     private void IncreaseMisplacedLetterCount(char c)
@@ -54,8 +44,8 @@ public class ScoredGuess
         for (var i = 0; i < Constants.wordLength; i++)
         {
             var guessCharacter = guess.Letters[i];
-            var targetWordCount = solution.GetLetterCount(guessCharacter);
-            if (targetWordCount > scoredGuess.GetKnownLetterCount(guessCharacter) + scoredGuess.GetMisplacedLetterCount(guessCharacter))
+            var targetWordCount = solution.LetterCounts[guessCharacter % 32];
+            if (targetWordCount > scoredGuess.KnownLetterCounts[guessCharacter % 32] + scoredGuess.MisplacedLetterCounts[guessCharacter % 32])
             {
                 scoredGuess.MisplacedLetters[i] = guessCharacter;
                 scoredGuess.IncreaseMisplacedLetterCount(guessCharacter);
@@ -65,8 +55,8 @@ public class ScoredGuess
         for (var i = 0; i < Constants.wordLength; i++)
         {
             var guessCharacter = guess.Letters[i];
-            var letterFreq = guess.GetLetterCount(guessCharacter);
-            if (letterFreq > scoredGuess.GetKnownLetterCount(guessCharacter) + scoredGuess.GetMisplacedLetterCount(guessCharacter))
+            var letterFreq = guess.LetterCounts[guessCharacter % 32];
+            if (letterFreq > scoredGuess.KnownLetterCounts[guessCharacter % 32] + scoredGuess.MisplacedLetterCounts[guessCharacter% 32])
             {
                 scoredGuess.EliminatedLetters[i] = guessCharacter;
             }
