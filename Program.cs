@@ -44,12 +44,6 @@ while (validSolutionWords.Count > 1)
     }
 }
 
-static List<string> ReadFile(string fileName)
-{
-    var lines = File.ReadAllLines(fileName);
-    return lines.ToList();
-}
-
 static Guess ReadGuess()
 {
 
@@ -128,28 +122,36 @@ static IEnumerable<string> FindOptimalGuessChoices(IEnumerable<string> wordlist,
     return currentBestGuesses;
 }
 
-static IEnumerable<Solution> getRemainingPossibleSolutions(Guess guess, IEnumerable<Solution> solutions) {
+static IEnumerable<Solution> getRemainingPossibleSolutions(Guess guess, IEnumerable<Solution> solutions)
+{
     return solutions.Where(s => isValidSolution(guess, s));
 }
 
-static int countRemainingPossibleSolutions(Guess guess, IEnumerable<Solution> solutions) {
+static int countRemainingPossibleSolutions(Guess guess, IEnumerable<Solution> solutions)
+{
     return solutions.Count(s => isValidSolution(guess, s));
 }
 
-static bool isValidSolution(Guess guess, Solution solution) {
+static bool isValidSolution(Guess guess, Solution solution)
+{
     for (var i = 0; i < Constants.wordLength; i++)
     {
         var knownLetter = guess.KnownLetters[i];
-        if (knownLetter != '\0') {
-            if (knownLetter == solution.Word[i]) {
+        if (knownLetter != '\0')
+        {
+            if (knownLetter == solution.Word[i])
+            {
                 continue;
-            } else {
+            }
+            else
+            {
                 return false;
             }
         }
 
         var misplacedLetter = guess.MisplacedLetters[i];
-        if (misplacedLetter != '\0') {
+        if (misplacedLetter != '\0')
+        {
             var countTarget = solution.GetLetterCount(misplacedLetter);
             var knownCountGuesses = guess.GetKnownLetterCount(misplacedLetter);
             var misplacedCountGuesses = guess.GetMisplacedLetterCount(misplacedLetter);
@@ -166,7 +168,7 @@ static bool isValidSolution(Guess guess, Solution solution) {
 
             continue;
         }
- 
+
         var eliminatedLetter = guess.EliminatedLetters[i];
 
         // if it's not known, or misplaced then it must be eliminated, so no need to check != '\0'
