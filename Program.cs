@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
 
 Console.WriteLine();
-var validGuessingWords = File.ReadAllLines("wordlist_guesses.txt").Select(w => new Word(w)).ToList();
-var validSolutionWords = File.ReadAllLines("wordlist_solutions.txt").Select(w => new Word(w)).ToList();
+var validGuessingWords = File.ReadAllLines("wordlist_guess_words.txt").Select(w => new Word(w)).ToList();
+var validSolutionWords = File.ReadAllLines("wordlist_solution_words.txt").Select(w => new Word(w)).ToList();
 
 //FindOptimalFirstGuess(validGuessingWords, validSolutionWords);
 
@@ -180,7 +180,7 @@ static bool isValidSolution(ScoredGuess guess, Word solution)
         var wordOccurances = solution.GetLetterCount(eliminatedLetter);
         var knownOccurances = guess.GetKnownLetterCount(eliminatedLetter);
         var misplacedOccurances = guess.GetMisplacedLetterCount(eliminatedLetter);
-        if (wordOccurances > knownOccurances + guess.GetMisplacedLetterCount(eliminatedLetter))
+        if (wordOccurances > knownOccurances + misplacedOccurances)
         {
             return false;
         }
@@ -207,11 +207,4 @@ static void LogDebug(string log)
 #pragma warning disable CS0162
         Console.WriteLine(log);
     }
-}
-
-static class Constants
-{
-    public const bool debug = false;
-    public const string validCharacters = "abcdefghijklmnopqrstuvwxyz";
-    public const int wordLength = 5;
 }
