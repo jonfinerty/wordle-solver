@@ -1,22 +1,15 @@
 ﻿using System.Collections.Concurrent;
 
 Console.WriteLine();
-var validGuessingWords = ReadFile("wordlist_guesses.txt");
-Console.WriteLine($"Number of valid guessing words = {validGuessingWords.Count}");
-
-var validSolutionWords = ReadFile("wordlist_solutions.txt").Select(w => new Solution(w)).ToList();
-Console.WriteLine($"Number of valid solution words = {validSolutionWords.Count}");
-
-Console.WriteLine();
-FindOptimalFirstGuess(validGuessingWords, validSolutionWords);
-return;
+var validGuessingWords = File.ReadAllLines("wordlist_guesses.txt").ToList();
+var validSolutionWords = File.ReadAllLines("wordlist_solutions.txt").Select(w => new Solution(w)).ToList();
 
 while (validSolutionWords.Count > 1)
 {
     var guess = ReadGuess();
 
     var watch = System.Diagnostics.Stopwatch.StartNew();
-    validSolutionWords = getRemainingPossibleSolutions(guess, validSolutionWords);
+    validSolutionWords = getRemainingPossibleSolutions(guess, validSolutionWords).ToList();
     Console.WriteLine($"Remaining valid solution words: {validSolutionWords.Count}");
     if (validSolutionWords.Count == 0)
     {
@@ -80,11 +73,11 @@ static Guess ReadGuess()
 // for guess choice, run through every target word
 // assign the the guess choice a value based on how
 // many words it removes from the remaining viable words
-static List<string> FindOptimalGuessChoices(List<string> wordlist, List<Solution> remainingViableSolutionWords)
+static IEnumerable<string> FindOptimalGuessChoices(IEnumerable<string> wordlist, IEnumerable<Solution> remainingViableSolutionWords)
 {
     int currentOptimalGuessValue = int.MaxValue;
     var resultsBag = new ConcurrentBag<(string, int)>();
-    Parallel.ForEach(wordlist, new ParallelOptions { MaxDegreeOfParallelism = 24 }, possibleGuessWord =>
+    Parallel.ForEach(wordlist, possibleGuessWord =>
     {
         LogDebug($"Guess word = {possibleGuessWord}");
         var totalPossibilities = 0;
@@ -135,11 +128,11 @@ static List<string> FindOptimalGuessChoices(List<string> wordlist, List<Solution
     return currentBestGuesses;
 }
 
-static List<Solution> getRemainingPossibleSolutions(Guess guess, List<Solution> solutions) {
-    return solutions.Where(s => isValidSolution(guess, s)).ToList();
+static IEnumerable<Solution> getRemainingPossibleSolutions(Guess guess, IEnumerable<Solution> solutions) {
+    return solutions.Where(s => isValidSolution(guess, s));
 }
 
-static int countRemainingPossibleSolutions(Guess guess, List<Solution> solutions) {
+static int countRemainingPossibleSolutions(Guess guess, IEnumerable<Solution> solutions) {
     return solutions.Count(s => isValidSolution(guess, s));
 }
 
@@ -147,53 +140,42 @@ static bool isValidSolution(Guess guess, Solution solution) {
     for (var i = 0; i < Constants.wordLength; i++)
     {
         var knownLetter = guess.KnownLetters[i];
-        if (knownLetter == '\0')
-        {
+        if (knownLetter != '\0') {
+            if (knownLetter == solution.Word[i]) {
+                continue;
+            } else {
+                return false;
+            }
+        }
+
+        var misplacedLetter = guess.MisplacedLetters[i];
+        if (misplacedLetter != '\0') {
+            var countTarget = solution.GetLetterCount(misplacedLetter);
+            var knownCountGuesses = guess.GetKnownLetterCount(misplacedLetter);
+            var misplacedCountGuesses = guess.GetMisplacedLetterCount(misplacedLetter);
+            if (countTarget < knownCountGuesses + misplacedCountGuesses)
+            {
+                return false;
+            }
+
+            // Validate not in known bad locations
+            if (misplacedLetter == solution.Word[i])
+            {
+                return false;
+            }
+
             continue;
         }
-        if (knownLetter != solution.Word[i])
-        {
-            //LogDebug($"Eliminating {solution} from remainingViableWords as does not contain known letter {knownLetter} at index {i}");
-            return false;
-        }
-    }
-
-    // Validate misplacedLetters counts
-    for (int i = 0; i < Constants.wordLength; i++)
-    {
-        var letter = guess.MisplacedLetters[i];
-        var countTarget = solution.GetLetterCount(letter);
-        var knownCountGuesses = guess.GetKnownLetterCount(letter);
-        var misplacedCountGuesses = guess.GetMisplacedLetterCount(letter);
-        if (countTarget < knownCountGuesses + misplacedCountGuesses)
-        {
-            //LogDebug($"Eliminating {solution} from remainingViableWords as does not contain enough misplaced letters '{letter}' ({countTarget} in word, {knownCountGuesses} in known locations, {misplacedCountGuesses} in unknown locations");
-            return false;
-        }
-
-        // Validate not in known bad locations
-        if (letter == solution.Word[i])
-        {
-            //LogDebug($"Eliminating {solution} from remainingViableWords as contains letter '{letter}' in known-misplaced position '{i}'");
-            return false;
-        }
-    }
-
-    for (int i = 0; i < Constants.wordLength; i++)
-    {
+ 
         var eliminatedLetter = guess.EliminatedLetters[i];
 
-        if (eliminatedLetter == '\0')
-        {
-            continue;
-        }
+        // if it's not known, or misplaced then it must be eliminated, so no need to check != '\0'
         // if number of letter in word > known + misplaced then non viable
         var wordOccurances = solution.GetLetterCount(eliminatedLetter);
         var knownOccurances = guess.GetKnownLetterCount(eliminatedLetter);
         var misplacedOccurances = guess.GetMisplacedLetterCount(eliminatedLetter);
         if (wordOccurances > knownOccurances + guess.GetMisplacedLetterCount(eliminatedLetter))
         {
-            //LogDebug($"Eliminating {solution} from remainingViableWords as contains eliminated letter '{eliminatedLetter}' ({wordOccurances} times in word, {knownOccurances} times in known locations, {misplacedOccurances} times misplaced)");
             return false;
         }
     }
@@ -202,14 +184,10 @@ static bool isValidSolution(Guess guess, Solution solution) {
 }
 
 #pragma warning disable CS8321
-static void FindOptimalFirstGuess(List<string> validGuessingWords, List<Solution> validSolutionWords)
+static void FindOptimalFirstGuess(IEnumerable<string> validGuessingWords, IEnumerable<Solution> validSolutionWords)
 {
     var timer = System.Diagnostics.Stopwatch.StartNew();
     var firstGuessWords = FindOptimalGuessChoices(validGuessingWords, validSolutionWords);
-    if (firstGuessWords.Count > 1)
-    {
-        firstGuessWords = firstGuessWords.Where(w => validSolutionWords.Any(s => s.Word == w)).ToList();
-    }
     timer.Stop();
     var elapsedTime = timer.ElapsedMilliseconds;
     Console.WriteLine($"Suggested word choices: {string.Join(',', firstGuessWords)}, determined in {elapsedTime}ms");
