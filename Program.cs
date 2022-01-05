@@ -1,10 +1,10 @@
 ﻿using System.Collections.Concurrent;
 
 Console.WriteLine();
-var validGuessingWords = ReadFile("wordlist_guesses2.txt");
+var validGuessingWords = ReadFile("wordlist_guesses.txt");
 Console.WriteLine($"Number of valid guessing words = {validGuessingWords.Count}");
 
-var validSolutionWords = ReadFile("wordlist_solutions2.txt");
+var validSolutionWords = ReadFile("wordlist_solutions.txt");
 Console.WriteLine($"Number of valid solution words = {validSolutionWords.Count}");
 
 Console.WriteLine();
@@ -143,28 +143,7 @@ static List<string> FindOptimalGuessChoices(List<string> wordlist, List<string> 
             //Console.WriteLine($"New equally optimal guess found: {evalutedGuess.Item1}, which reduces the set of possible answers to {evalutedGuess.Item2} across all games");
         }
     }
-
-    // foreach (var possibleGuessWord in wordlist) {
-    //     //Console.WriteLine($"Guess word = {possibleGuessWord}");
-    //     var totalPossibilities = 0;
-    //     foreach (var possibleTargetWord in remainingViableWords) {
-    //         //Console.WriteLine($"Possible target word = {possibleTargetWord}");
-    //         var guess = Guess.FromTarget(possibleGuessWord, possibleTargetWord);
-    //         var remainingPossibleAnswers = computeRemainingPossibleAnswers(guess, remainingViableWords);
-    //         totalPossibilities += remainingPossibleAnswers.Count;
-    //     }
-
-    //     if (totalPossibilities < currentBestGuessTotalPossibilities && totalPossibilities > 0) {
-    //         currentBestGuessTotalPossibilities = totalPossibilities;
-    //         currentBestGuesses.Clear();
-    //         currentBestGuesses.Add(possibleGuessWord);
-    //         Console.WriteLine($"New optimal guess found: {possibleGuessWord}, which on average reduces the set of possible answers to {totalPossibilities} across all games");
-    //     } else if (totalPossibilities == currentBestGuessTotalPossibilities) {
-    //         currentBestGuesses.Add(possibleGuessWord);
-    //         Console.WriteLine($"New equally optimal guess found: {possibleGuessWord}, which on average reduces the set of possible answers to {totalPossibilities} across all games");
-    //     }
-    // }
-
+    
     return currentBestGuesses;
 }
 
