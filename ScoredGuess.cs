@@ -1,10 +1,9 @@
 using System.Text;
 
-public class Guess
+public class ScoredGuess
 {
-    public string word;
+    public Word Guess;
     public char[] KnownLetters = new char[Constants.wordLength];
-
     // +1 as the % operator used to access means a = 1, b=2 
     // this is fewer operations than correcting by 1 every array index access
     private byte[] KnownLetterCounts = new byte[Constants.validCharacters.Length + 1];
@@ -12,9 +11,9 @@ public class Guess
     private byte[] MisplacedLetterCounts = new byte[Constants.validCharacters.Length + 1];
     public char[] EliminatedLetters = new char[Constants.wordLength];
 
-    private Guess(string guessWord)
+    private ScoredGuess(Word guess)
     {
-        word = guessWord;
+        Guess = guess;
     }
 
     public int GetKnownLetterCount(char c)
@@ -37,71 +36,68 @@ public class Guess
         MisplacedLetterCounts[(int)c % 32]++;
     }
 
-    public static Guess FromTarget(string guessWord, string targetWord)
+    public static ScoredGuess FromSolution(Word guess, Word solution)
     {
-        var guess = new Guess(guessWord);
+        var scoredGuess = new ScoredGuess(guess);
 
         for (var i = 0; i < Constants.wordLength; i++)
         {
-            var guessCharacter = guessWord[i];
-            var targetCharacter = targetWord[i];
+            var guessCharacter = guess.Letters[i];
+            var targetCharacter = solution.Letters[i];
             if (guessCharacter == targetCharacter)
             {
-                guess.KnownLetters[i] = guessCharacter;
-                guess.IncreaseKnownLetterCount(guessCharacter);
+                scoredGuess.KnownLetters[i] = guessCharacter;
+                scoredGuess.IncreaseKnownLetterCount(guessCharacter);
             }
         }
 
         for (var i = 0; i < Constants.wordLength; i++)
         {
-            var guessCharacter = guessWord[i];
-            var targetWordCount = targetWord.Count(c => c == guessCharacter);
-            if (targetWordCount > guess.GetKnownLetterCount(guessCharacter) + guess.GetMisplacedLetterCount(guessCharacter))
+            var guessCharacter = guess.Letters[i];
+            var targetWordCount = solution.GetLetterCount(guessCharacter);
+            if (targetWordCount > scoredGuess.GetKnownLetterCount(guessCharacter) + scoredGuess.GetMisplacedLetterCount(guessCharacter))
             {
-                guess.MisplacedLetters[i] = guessCharacter;
-                guess.IncreaseMisplacedLetterCount(guessCharacter);
+                scoredGuess.MisplacedLetters[i] = guessCharacter;
+                scoredGuess.IncreaseMisplacedLetterCount(guessCharacter);
             }
         }
 
         for (var i = 0; i < Constants.wordLength; i++)
         {
-            var guessCharacter = guessWord[i];
-            var letterFreq = guessWord.Count(c => c == guessCharacter);
-            if (letterFreq > guess.GetKnownLetterCount(guessCharacter) + guess.GetMisplacedLetterCount(guessCharacter))
+            var guessCharacter = guess.Letters[i];
+            var letterFreq = guess.GetLetterCount(guessCharacter);
+            if (letterFreq > scoredGuess.GetKnownLetterCount(guessCharacter) + scoredGuess.GetMisplacedLetterCount(guessCharacter))
             {
-                guess.EliminatedLetters[i] = guessCharacter;
+                scoredGuess.EliminatedLetters[i] = guessCharacter;
             }
         }
 
-        return guess;
+        return scoredGuess;
     }
 
-    public static Guess FromScore(string guessWord, string score)
+    public static ScoredGuess FromScore(Word guess, string score)
     {
-        var guess = new Guess(guessWord);
+        var scoredGuess = new ScoredGuess(guess);
         for (int i = 0; i < Constants.wordLength; i++)
         {
             var scoreCharacter = score[i];
-            var guessCharacter = guessWord[i];
+            var guessCharacter = guess.Letters[i];
             if (scoreCharacter == 'c')
             {
-                guess.KnownLetters[i] = guessCharacter;
-                guess.IncreaseKnownLetterCount(guessCharacter);
-                continue;
+                scoredGuess.KnownLetters[i] = guessCharacter;
+                scoredGuess.IncreaseKnownLetterCount(guessCharacter);
             }
-            if (scoreCharacter == 'm')
+            else if (scoreCharacter == 'm')
             {
-                guess.MisplacedLetters[i] = guessCharacter;
-                guess.IncreaseMisplacedLetterCount(guessCharacter);
-                continue;
+                scoredGuess.MisplacedLetters[i] = guessCharacter;
+                scoredGuess.IncreaseMisplacedLetterCount(guessCharacter);
             }
-            if (scoreCharacter == 'w')
+            else // therefore scoreCharacter == 'w'
             {
-                guess.EliminatedLetters[i] = guessCharacter;
-                continue;
+                scoredGuess.EliminatedLetters[i] = guessCharacter;
             }
         }
-        return guess;
+        return scoredGuess;
     }
 
     public override string ToString()
@@ -123,7 +119,7 @@ public class Guess
                 stringGuessRepresentation.Append('w');
             }
         }
-        return $"{word} ({stringGuessRepresentation.ToString()})";
+        return $"{Guess} ({stringGuessRepresentation.ToString()})";
     }
 
 }

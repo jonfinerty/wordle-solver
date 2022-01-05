@@ -1,8 +1,10 @@
 ﻿using System.Collections.Concurrent;
 
 Console.WriteLine();
-var validGuessingWords = File.ReadAllLines("wordlist_guesses.txt").ToList();
-var validSolutionWords = File.ReadAllLines("wordlist_solutions.txt").Select(w => new Solution(w)).ToList();
+var validGuessingWords = File.ReadAllLines("wordlist_guesses.txt").Select(w => new Word(w)).ToList();
+var validSolutionWords = File.ReadAllLines("wordlist_solutions.txt").Select(w => new Word(w)).ToList();
+
+//FindOptimalFirstGuess(validGuessingWords, validSolutionWords);
 
 while (validSolutionWords.Count > 1)
 {
@@ -31,7 +33,7 @@ while (validSolutionWords.Count > 1)
     var optimalGuessWords = FindOptimalGuessChoices(validGuessingWords, validSolutionWords);
     // if chosing a guess from either the validGuessingWords or remainingViableWords is
     // equally optimal, favour a remainingViableWord as you might just get lucky
-    var optimalGuessWordsInSolutionSet = optimalGuessWords.Where(w => validSolutionWords.Select(s => s.Word).Contains(w)).ToList();
+    var optimalGuessWordsInSolutionSet = optimalGuessWords.Where(w => validSolutionWords.Contains(w)).ToList();
     watch.Stop();
     var elapsedMs = watch.ElapsedMilliseconds;
     if (optimalGuessWordsInSolutionSet.Count > 0)
@@ -44,9 +46,8 @@ while (validSolutionWords.Count > 1)
     }
 }
 
-static Guess ReadGuess()
+static ScoredGuess ReadGuess()
 {
-
     var guessInput = "";
     while (guessInput == null || !guessInput.All(char.IsLetter) || guessInput.Length != Constants.wordLength)
     {
@@ -61,16 +62,19 @@ static Guess ReadGuess()
         Console.WriteLine("Enter score, c=correct, m=misplaced, w=wrong. e.g. cmmwc");
         scoreInput = Console.ReadLine();
     }
-    return Guess.FromScore(guessInput.ToLower(), scoreInput.ToLower());
+
+    var guess = new Word(guessInput.ToLower());
+
+    return ScoredGuess.FromScore(guess, scoreInput.ToLower());
 }
 
 // for guess choice, run through every target word
 // assign the the guess choice a value based on how
 // many words it removes from the remaining viable words
-static IEnumerable<string> FindOptimalGuessChoices(IEnumerable<string> wordlist, IEnumerable<Solution> remainingViableSolutionWords)
+static IEnumerable<Word> FindOptimalGuessChoices(IEnumerable<Word> wordlist, IEnumerable<Word> remainingViableSolutionWords)
 {
     int currentOptimalGuessValue = int.MaxValue;
-    var resultsBag = new ConcurrentBag<(string, int)>();
+    var resultsBag = new ConcurrentBag<(Word, int)>();
     Parallel.ForEach(wordlist, possibleGuessWord =>
     {
         LogDebug($"Guess word = {possibleGuessWord}");
@@ -78,8 +82,8 @@ static IEnumerable<string> FindOptimalGuessChoices(IEnumerable<string> wordlist,
         var aborted = false;
         foreach (var possibleSolutionWord in remainingViableSolutionWords)
         {
-            var guess = Guess.FromTarget(possibleGuessWord, possibleSolutionWord.Word);
-            var remainingPossibleAnswers = countRemainingPossibleSolutions(guess, remainingViableSolutionWords);
+            var scoredGuess = ScoredGuess.FromSolution(possibleGuessWord, possibleSolutionWord);
+            var remainingPossibleAnswers = countRemainingPossibleSolutions(scoredGuess, remainingViableSolutionWords);
             totalPossibilities += remainingPossibleAnswers;
             if (totalPossibilities > currentOptimalGuessValue)
             {
@@ -101,7 +105,7 @@ static IEnumerable<string> FindOptimalGuessChoices(IEnumerable<string> wordlist,
     });
 
 
-    var currentBestGuesses = new List<string>();
+    var currentBestGuesses = new List<Word>();
     var currentBestGuessValue = int.MaxValue;
     foreach (var evalutedGuess in resultsBag)
     {
@@ -122,24 +126,24 @@ static IEnumerable<string> FindOptimalGuessChoices(IEnumerable<string> wordlist,
     return currentBestGuesses;
 }
 
-static IEnumerable<Solution> getRemainingPossibleSolutions(Guess guess, IEnumerable<Solution> solutions)
+static IEnumerable<Word> getRemainingPossibleSolutions(ScoredGuess scoredGuess, IEnumerable<Word> solutions)
 {
-    return solutions.Where(s => isValidSolution(guess, s));
+    return solutions.Where(s => isValidSolution(scoredGuess, s));
 }
 
-static int countRemainingPossibleSolutions(Guess guess, IEnumerable<Solution> solutions)
+static int countRemainingPossibleSolutions(ScoredGuess scoredGuess, IEnumerable<Word> solutions)
 {
-    return solutions.Count(s => isValidSolution(guess, s));
+    return solutions.Count(s => isValidSolution(scoredGuess, s));
 }
 
-static bool isValidSolution(Guess guess, Solution solution)
+static bool isValidSolution(ScoredGuess guess, Word solution)
 {
     for (var i = 0; i < Constants.wordLength; i++)
     {
         var knownLetter = guess.KnownLetters[i];
         if (knownLetter != '\0')
         {
-            if (knownLetter == solution.Word[i])
+            if (knownLetter == solution.Letters[i])
             {
                 continue;
             }
@@ -161,7 +165,7 @@ static bool isValidSolution(Guess guess, Solution solution)
             }
 
             // Validate not in known bad locations
-            if (misplacedLetter == solution.Word[i])
+            if (misplacedLetter == solution.Letters[i])
             {
                 return false;
             }
@@ -186,7 +190,7 @@ static bool isValidSolution(Guess guess, Solution solution)
 }
 
 #pragma warning disable CS8321
-static void FindOptimalFirstGuess(IEnumerable<string> validGuessingWords, IEnumerable<Solution> validSolutionWords)
+static void FindOptimalFirstGuess(IEnumerable<Word> validGuessingWords, IEnumerable<Word> validSolutionWords)
 {
     var timer = System.Diagnostics.Stopwatch.StartNew();
     var firstGuessWords = FindOptimalGuessChoices(validGuessingWords, validSolutionWords);
