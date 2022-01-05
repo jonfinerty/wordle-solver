@@ -1,25 +1,20 @@
 using System.Text;
-using System.Runtime.CompilerServices;
 
 public class Guess
 {
-    private static string validCharacters = "abcdefghijklmnopqrstuvwxyz";
     public string word;
-    public char[] KnownLetters;
+    public char[] KnownLetters = new char[Constants.wordLength];
 
     // +1 as the % operator used to access means a = 1, b=2 
     // this is fewer operations than correcting by 1 every array index access
-    private int[] KnownLetterCounts = new int[validCharacters.Length + 1];
-    public char[] MisplacedLetters;
-    private int[] MisplacedLetterCounts = new int[validCharacters.Length + 1];
-    public char[] EliminatedLetters;
+    private byte[] KnownLetterCounts = new byte[Constants.validCharacters.Length + 1];
+    public char[] MisplacedLetters = new char[Constants.wordLength];
+    private byte[] MisplacedLetterCounts = new byte[Constants.validCharacters.Length + 1];
+    public char[] EliminatedLetters = new char[Constants.wordLength];
 
     private Guess(string guessWord)
     {
         word = guessWord;
-        KnownLetters = new char[word.Length];
-        MisplacedLetters = new char[word.Length];
-        EliminatedLetters = new char[word.Length];
     }
 
     public int GetKnownLetterCount(char c)
@@ -46,7 +41,7 @@ public class Guess
     {
         var guess = new Guess(guessWord);
 
-        for (var i = 0; i < guessWord.Length; i++)
+        for (var i = 0; i < Constants.wordLength; i++)
         {
             var guessCharacter = guessWord[i];
             var targetCharacter = targetWord[i];
@@ -57,7 +52,7 @@ public class Guess
             }
         }
 
-        for (var i = 0; i < guessWord.Length; i++)
+        for (var i = 0; i < Constants.wordLength; i++)
         {
             var guessCharacter = guessWord[i];
             var targetWordCount = targetWord.Count(c => c == guessCharacter);
@@ -68,7 +63,7 @@ public class Guess
             }
         }
 
-        for (var i = 0; i < guessWord.Length; i++)
+        for (var i = 0; i < Constants.wordLength; i++)
         {
             var guessCharacter = guessWord[i];
             var letterFreq = guessWord.Count(c => c == guessCharacter);
@@ -84,23 +79,23 @@ public class Guess
     public static Guess FromScore(string guessWord, string score)
     {
         var guess = new Guess(guessWord);
-        for (int i = 0; i < score.Length; i++)
+        for (int i = 0; i < Constants.wordLength; i++)
         {
             var scoreCharacter = score[i];
             var guessCharacter = guessWord[i];
-            if (Char.ToUpper(scoreCharacter) == 'C')
+            if (scoreCharacter == 'c')
             {
                 guess.KnownLetters[i] = guessCharacter;
                 guess.IncreaseKnownLetterCount(guessCharacter);
                 continue;
             }
-            if (Char.ToUpper(scoreCharacter) == 'M')
+            if (scoreCharacter == 'm')
             {
                 guess.MisplacedLetters[i] = guessCharacter;
                 guess.IncreaseMisplacedLetterCount(guessCharacter);
                 continue;
             }
-            if (Char.ToUpper(scoreCharacter) == 'W')
+            if (scoreCharacter == 'w')
             {
                 guess.EliminatedLetters[i] = guessCharacter;
                 continue;
@@ -112,20 +107,20 @@ public class Guess
     public override string ToString()
     {
         var stringGuessRepresentation = new StringBuilder();
-        for (int i = 0; i < word.Length; i++)
+        for (int i = 0; i < Constants.wordLength; i++)
         {
             if (KnownLetters[i] != '\0')
             {
-                stringGuessRepresentation.Append('C');
+                stringGuessRepresentation.Append('c');
             }
             else if (MisplacedLetters[i] != '\0')
             {
-                stringGuessRepresentation.Append('M');
+                stringGuessRepresentation.Append('m');
                 continue;
             }
             else
             {
-                stringGuessRepresentation.Append('W');
+                stringGuessRepresentation.Append('w');
             }
         }
         return $"{word} ({stringGuessRepresentation.ToString()})";
