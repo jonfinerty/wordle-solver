@@ -92,7 +92,7 @@ static List<string> ReadFile(string fileName)
 static List<string> FindOptimalGuessChoices(List<string> wordlist, List<string> remainingViableWords)
 {
 
-    var highWatermarkValue = int.MaxValue;
+    var currentOptimalGuess = int.MaxValue;
     var results = new ConcurrentBag<(string, int)>();
     Parallel.ForEach(wordlist, new ParallelOptions { MaxDegreeOfParallelism = 12 }, possibleGuessWord =>
     {
@@ -100,29 +100,30 @@ static List<string> FindOptimalGuessChoices(List<string> wordlist, List<string> 
         // {
         //Console.WriteLine($"Guess word = {possibleGuessWord}");
         var totalPossibilities = 0;
+        var aborted = false;
         foreach (var possibleTargetWord in remainingViableWords)
         {
             //Console.WriteLine($"Possible target word = {possibleTargetWord}");
             var guess = Guess.FromTarget(possibleGuessWord, possibleTargetWord);
             var remainingPossibleAnswers = computeRemainingPossibleAnswers(guess, remainingViableWords);
             totalPossibilities += remainingPossibleAnswers.Count;
-            if (totalPossibilities > highWatermarkValue)
+            if (totalPossibilities > currentOptimalGuess)
             {
                 //Console.WriteLine($"Aborting guess '{possibleGuessWord}' as it's already suboptimal");
-                goto ABORT;
+                aborted = true;
+                break;
             }
         }
 
-        if (totalPossibilities > 0)
+        if (totalPossibilities > 0 && !aborted)
         {
             //Console.WriteLine($"Guess '{possibleGuessWord}' evaluated with score '{totalPossibilities}'");
             results.Add((possibleGuessWord, totalPossibilities));
-            if (totalPossibilities < highWatermarkValue)
+            if (totalPossibilities < currentOptimalGuess)
             {
-                highWatermarkValue = totalPossibilities;
+                currentOptimalGuess = totalPossibilities;
             }
         }
-    ABORT:;
     });
     //}
 
@@ -143,7 +144,7 @@ static List<string> FindOptimalGuessChoices(List<string> wordlist, List<string> 
             //Console.WriteLine($"New equally optimal guess found: {evalutedGuess.Item1}, which reduces the set of possible answers to {evalutedGuess.Item2} across all games");
         }
     }
-    
+
     return currentBestGuesses;
 }
 

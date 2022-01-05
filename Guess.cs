@@ -9,7 +9,7 @@ public class Guess
 
     // +1 as the % operator used to access means a = 1, b=2 
     // this is fewer operations than correcting by 1 every array index access
-    private int[] KnownLetterCounts = new int[validCharacters.Length + 1]; 
+    private int[] KnownLetterCounts = new int[validCharacters.Length + 1];
     public char[] MisplacedLetters;
     private int[] MisplacedLetterCounts = new int[validCharacters.Length + 1];
     public char[] EliminatedLetters;
@@ -117,13 +117,13 @@ public class Guess
             if (KnownLetters[i] != '\0')
             {
                 stringGuessRepresentation.Append('C');
-            } 
+            }
             else if (MisplacedLetters[i] != '\0')
             {
                 stringGuessRepresentation.Append('M');
                 continue;
             }
-            else 
+            else
             {
                 stringGuessRepresentation.Append('W');
             }
