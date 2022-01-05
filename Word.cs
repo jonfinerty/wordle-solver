@@ -1,22 +1,28 @@
 public class Word
 {
     public string Letters;
+    
+    // the word with precomputed % 32 letters
+    public int[] offsetLetters; 
+
     // +1 as the % operator used to access means a = 1, b=2 
     // this is fewer operations than correcting by 1 every array index access
     private byte[] LetterCounts = new byte[Constants.validCharacters.Length + 1];
 
-    public int GetLetterCount(char c)
+    public int GetLetterCount(int offsetLetter)
     {
-        return LetterCounts[(int)c % 32];
+        return LetterCounts[offsetLetter];
     }
 
     public Word(string letters)
     {
         Letters = letters;
-
+        offsetLetters = new int[Constants.wordLength];
         for (var i = 0; i < Constants.wordLength; i++)
         {
-            LetterCounts[(int)letters[i] % 32]++;
+            var letterModulo = letters[i] % 32;
+            offsetLetters[i] = letterModulo;
+            LetterCounts[letterModulo]++;
         }
     }
 

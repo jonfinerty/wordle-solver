@@ -4,7 +4,7 @@ Console.WriteLine();
 var validGuessingWords = File.ReadAllLines("wordlist_guess_words.txt").Select(w => new Word(w)).ToList();
 var validSolutionWords = File.ReadAllLines("wordlist_solution_words.txt").Select(w => new Word(w)).ToList();
 
-//FindOptimalFirstGuess(validGuessingWords, validSolutionWords);
+FindOptimalFirstGuess(validGuessingWords, validSolutionWords);
 
 while (validSolutionWords.Count > 1)
 {
@@ -136,11 +136,11 @@ static int countRemainingPossibleSolutions(ScoredGuess scoredGuess, IEnumerable<
     return solutions.Count(s => isValidSolution(scoredGuess, s));
 }
 
-static bool isValidSolution(ScoredGuess guess, Word solution)
+static bool isValidSolution(ScoredGuess scoredGuess, Word solution)
 {
     for (var i = 0; i < Constants.wordLength; i++)
     {
-        var knownLetter = guess.KnownLetters[i];
+        var knownLetter = scoredGuess.KnownLetters[i];
         if (knownLetter != '\0')
         {
             if (knownLetter == solution.Letters[i])
@@ -153,12 +153,13 @@ static bool isValidSolution(ScoredGuess guess, Word solution)
             }
         }
 
-        var misplacedLetter = guess.MisplacedLetters[i];
+        var misplacedLetter = scoredGuess.MisplacedLetters[i];
         if (misplacedLetter != '\0')
         {
-            var countTarget = solution.GetLetterCount(misplacedLetter);
-            var knownCountGuesses = guess.GetKnownLetterCount(misplacedLetter);
-            var misplacedCountGuesses = guess.GetMisplacedLetterCount(misplacedLetter);
+            var misplacedLetterOffset = scoredGuess.Guess.offsetLetters[i];
+            var countTarget = solution.GetLetterCount(misplacedLetterOffset);
+            var knownCountGuesses = scoredGuess.GetKnownLetterCount(misplacedLetterOffset);
+            var misplacedCountGuesses = scoredGuess.GetMisplacedLetterCount(misplacedLetterOffset);
             if (countTarget < knownCountGuesses + misplacedCountGuesses)
             {
                 return false;
@@ -173,13 +174,13 @@ static bool isValidSolution(ScoredGuess guess, Word solution)
             continue;
         }
 
-        var eliminatedLetter = guess.EliminatedLetters[i];
-
+        var eliminatedLetter = scoredGuess.EliminatedLetters[i];
+        var eliminatedLetterOffset = scoredGuess.Guess.offsetLetters[i];
         // if it's not known, or misplaced then it must be eliminated, so no need to check != '\0'
         // if number of letter in word > known + misplaced then non viable
-        var wordOccurances = solution.GetLetterCount(eliminatedLetter);
-        var knownOccurances = guess.GetKnownLetterCount(eliminatedLetter);
-        var misplacedOccurances = guess.GetMisplacedLetterCount(eliminatedLetter);
+        var wordOccurances = solution.GetLetterCount(eliminatedLetterOffset);
+        var knownOccurances = scoredGuess.GetKnownLetterCount(eliminatedLetterOffset);
+        var misplacedOccurances = scoredGuess.GetMisplacedLetterCount(eliminatedLetterOffset);
         if (wordOccurances > knownOccurances + misplacedOccurances)
         {
             return false;
