@@ -19,4 +19,9 @@ public class Solution
             LetterCounts[(int)word[i] % 32]++;
         }
     }
+
+    public override string ToString()
+    {
+        return Word;
+    }
 }
