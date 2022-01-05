@@ -4,7 +4,7 @@ Console.WriteLine();
 var validGuessingWords = File.ReadAllLines("wordlist_guess_words.txt").Select(w => new Word(w)).ToList();
 var validSolutionWords = File.ReadAllLines("wordlist_solution_words.txt").Select(w => new Word(w)).ToList();
 
-//FindOptimalFirstGuess(validGuessingWords, validSolutionWords);
+FindOptimalFirstGuess(validGuessingWords, validSolutionWords);
 
 while (validSolutionWords.Count > 1)
 {
@@ -156,9 +156,10 @@ static bool isValidSolution(ScoredGuess guess, Word solution)
         var misplacedLetter = guess.MisplacedLetters[i];
         if (misplacedLetter != '\0')
         {
-            var countTarget = solution.GetLetterCount(misplacedLetter);
-            var knownCountGuesses = guess.GetKnownLetterCount(misplacedLetter);
-            var misplacedCountGuesses = guess.GetMisplacedLetterCount(misplacedLetter);
+            var misplacedLetterIndex = misplacedLetter % 32;
+            var countTarget = solution.LetterCounts[misplacedLetterIndex];
+            var knownCountGuesses = guess.KnownLetterCounts[misplacedLetterIndex];
+            var misplacedCountGuesses = guess.MisplacedLetterCounts[misplacedLetterIndex];
             if (countTarget < knownCountGuesses + misplacedCountGuesses)
             {
                 return false;
@@ -177,9 +178,10 @@ static bool isValidSolution(ScoredGuess guess, Word solution)
 
         // if it's not known, or misplaced then it must be eliminated, so no need to check != '\0'
         // if number of letter in word > known + misplaced then non viable
-        var wordOccurances = solution.GetLetterCount(eliminatedLetter);
-        var knownOccurances = guess.GetKnownLetterCount(eliminatedLetter);
-        var misplacedOccurances = guess.GetMisplacedLetterCount(eliminatedLetter);
+        var eliminatedLetterIndex = eliminatedLetter % 32;
+        var wordOccurances = solution.LetterCounts[eliminatedLetterIndex];
+        var knownOccurances = guess.KnownLetterCounts[eliminatedLetterIndex];
+        var misplacedOccurances = guess.MisplacedLetterCounts[eliminatedLetterIndex];
         if (wordOccurances > knownOccurances + misplacedOccurances)
         {
             return false;

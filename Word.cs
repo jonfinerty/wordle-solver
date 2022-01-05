@@ -3,12 +3,7 @@ public class Word
     public string Letters;
     // +1 as the % operator used to access means a = 1, b=2 
     // this is fewer operations than correcting by 1 every array index access
-    private byte[] LetterCounts = new byte[Constants.validCharacters.Length + 1];
-
-    public int GetLetterCount(char c)
-    {
-        return LetterCounts[(int)c % 32];
-    }
+    public byte[] LetterCounts = new byte[Constants.validCharacters.Length + 1];
 
     public Word(string letters)
     {
