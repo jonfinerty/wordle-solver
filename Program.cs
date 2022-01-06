@@ -4,7 +4,7 @@ Console.WriteLine();
 var validGuessingWords = File.ReadAllLines("wordlist_guess_words.txt").Select(w => new Word(w)).ToList();
 var validSolutionWords = File.ReadAllLines("wordlist_solution_words.txt").Select(w => new Word(w)).ToList();
 
-FindOptimalFirstGuess(validGuessingWords, validSolutionWords);
+//FindOptimalFirstGuess(validGuessingWords, validSolutionWords);
 
 while (validSolutionWords.Count > 1)
 {
@@ -30,7 +30,7 @@ while (validSolutionWords.Count > 1)
         Console.WriteLine(string.Join(',', validSolutionWords));
     }
 
-    var optimalGuessWords = FindOptimalGuessChoices(validGuessingWords, validSolutionWords);
+    var optimalGuessWords = FindOptimalGuessChoices2(validGuessingWords, validSolutionWords);
     // if chosing a guess from either the validGuessingWords or remainingViableWords is
     // equally optimal, favour a remainingViableWord as you might just get lucky
     var optimalGuessWordsInSolutionSet = optimalGuessWords.Where(w => validSolutionWords.Contains(w)).ToList();
@@ -69,8 +69,8 @@ static ScoredGuess ReadGuess()
 }
 
 // for guess choice, run through every target word
-// assign the the guess choice a value based on how
-// many words it removes from the remaining viable words
+// assign the the guess choice a value based on the
+// expected number of guesses
 static IEnumerable<Word> FindOptimalGuessChoices(IEnumerable<Word> wordlist, IEnumerable<Word> remainingViableSolutionWords)
 {
     int currentOptimalGuessValue = int.MaxValue;
@@ -104,7 +104,6 @@ static IEnumerable<Word> FindOptimalGuessChoices(IEnumerable<Word> wordlist, IEn
         }
     });
 
-
     var currentBestGuesses = new List<Word>();
     var currentBestGuessValue = int.MaxValue;
     foreach (var evalutedGuess in resultsBag)
@@ -125,6 +124,76 @@ static IEnumerable<Word> FindOptimalGuessChoices(IEnumerable<Word> wordlist, IEn
 
     return currentBestGuesses;
 }
+
+// todo don't need both loops, should be decimal
+static double getExpectedNumberOfGuesses(Word guessWord, IEnumerable<Word> guessWordList, List<Word> remainingViableSolutionWords, int guessDepth)
+{
+    if (remainingViableSolutionWords.Count == 1) {
+        return 0;
+    }
+
+    if (guessDepth >= Constants.numberOfGuesses) {
+        return 0;
+    }
+    
+    var totalGuesses = 0.0;
+    LogDebug($"Guess word = {guessWord}");
+    foreach (var possibleSolutionWord in remainingViableSolutionWords)
+    {
+        var scoredGuess = ScoredGuess.FromSolution(guessWord, possibleSolutionWord);
+        var remainingPossibleAnswers = getRemainingPossibleSolutions(scoredGuess, remainingViableSolutionWords);
+        foreach (var nextGuessWord in guessWordList) {
+            totalGuesses = getExpectedNumberOfGuesses(nextGuessWord, guessWordList, remainingPossibleAnswers.ToList(), guessDepth+1) + 1;
+        }
+    }
+
+    return totalGuesses / (double) remainingViableSolutionWords.Count();    
+}
+
+
+static IEnumerable<Word> FindOptimalGuessChoices2(IEnumerable<Word> guessWordlist, IEnumerable<Word> remainingViableSolutionWords) {
+    var currentOptimalGuessValue = double.MaxValue;
+    var resultsBag = new ConcurrentBag<(Word, double)>();
+    
+    // Parallel.ForEach(guessWordlist, possibleGuessWord =>
+    // {
+    foreach(var possibleGuessWord in guessWordlist)
+    {
+        LogDebug($"Guess word = {possibleGuessWord}");
+        var expectedNumberOfGuesses = getExpectedNumberOfGuesses(possibleGuessWord, guessWordlist, remainingViableSolutionWords.ToList(), 0);
+        
+        if (expectedNumberOfGuesses <= currentOptimalGuessValue)
+        {
+            resultsBag.Add((possibleGuessWord, expectedNumberOfGuesses));
+            if (expectedNumberOfGuesses < currentOptimalGuessValue)
+            {
+                currentOptimalGuessValue = expectedNumberOfGuesses;
+            }
+        }
+    //});
+    }
+
+    var currentBestGuesses = new List<Word>();
+    var currentBestGuessValue = double.MaxValue;
+    foreach (var evalutedGuess in resultsBag)
+    {
+        if (evalutedGuess.Item2 < currentBestGuessValue && evalutedGuess.Item2 > 0)
+        {
+            currentBestGuessValue = evalutedGuess.Item2;
+            currentBestGuesses.Clear();
+            currentBestGuesses.Add(evalutedGuess.Item1);
+            LogDebug($"New optimal guess found: {evalutedGuess.Item1}, which reduces the set of possible answers to {evalutedGuess.Item2} across all games");
+        }
+        else if (evalutedGuess.Item2 == currentBestGuessValue)
+        {
+            currentBestGuesses.Add(evalutedGuess.Item1);
+            LogDebug($"New equally optimal guess found: {evalutedGuess.Item1}, which reduces the set of possible answers to {evalutedGuess.Item2} across all games");
+        }
+    }
+
+    return currentBestGuesses;
+}
+
 
 static IEnumerable<Word> getRemainingPossibleSolutions(ScoredGuess scoredGuess, IEnumerable<Word> solutions)
 {
