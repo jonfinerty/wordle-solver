@@ -48,16 +48,16 @@ while (validSolutionWords.Count > 1)
 
 static ScoredGuess ReadGuess()
 {
+    var validScoreInput = "cCmMwW";
     var guessInput = "";
-    while (guessInput == null || !guessInput.All(char.IsLetter) || guessInput.Length != Constants.wordLength)
+    while (guessInput == null || !guessInput.All(char.IsLetter) || guessInput.Length != Constants.wordLength || guessInput.All(c => validScoreInput.Contains(c)))
     {
         Console.WriteLine("Enter guess");
         guessInput = Console.ReadLine();
     }
 
     var scoreInput = "";
-    var validInput = "cCmMwW";
-    while (scoreInput == null || !scoreInput.All(c => validInput.Contains(c)) || scoreInput.Length != Constants.wordLength)
+    while (scoreInput == null || !scoreInput.All(c => validScoreInput.Contains(c)) || scoreInput.Length != Constants.wordLength)
     {
         Console.WriteLine("Enter score, c=correct, m=misplaced, w=wrong. e.g. cmmwc");
         scoreInput = Console.ReadLine();
